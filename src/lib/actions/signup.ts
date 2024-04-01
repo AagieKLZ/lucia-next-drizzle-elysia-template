@@ -1,17 +1,25 @@
+"use server";
 import { Argon2id } from "oslo/password";
-import type { ActionResult } from "./form";
+// import type { ActionResult } from "./form";
 import { generateId } from "lucia";
 import { db, userTable } from "~/server/db/schema";
-import { lucia } from "./auth";
+import { lucia } from "../auth";
 import { cookies } from "next/headers";
 import type { DrizzleError } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
+type ActionResult = {
+	error: {
+		username: string | null;
+		email: string | null;
+		password: string | null;
+	} | null;
+}
+
 // biome-ignore lint/suspicious/noExplicitAny: This is a form handler
 export async function signup(_: any, formData: FormData): Promise<ActionResult> {
-	"use server";
 	const username = formData.get("username");
-	// username must be between 4 ~ 31 characters, and only consists of lowercase letters, 0-9, -, and _
+	// username must be between 4 ~ 31 characters
 	// keep in mind some database (e.g. mysql) are case insensitive
 	if (
 		typeof username !== "string" ||
@@ -20,7 +28,11 @@ export async function signup(_: any, formData: FormData): Promise<ActionResult> 
 		!/^[a-z0-9_-]+$/.test(username)
 	) {
 		return {
-			error: "Invalid username",
+			error: {
+				username: "Invalid username",
+				email: null,
+				password: null,
+			}
 		};
 	}
 	const password = formData.get("password");
@@ -30,7 +42,11 @@ export async function signup(_: any, formData: FormData): Promise<ActionResult> 
 		password.length > 255
 	) {
 		return {
-			error: "Invalid password",
+			error: {
+				username: null,
+				email: null,
+				password: "Invalid password",
+			}
 		};
 	}
 
@@ -42,11 +58,26 @@ export async function signup(_: any, formData: FormData): Promise<ActionResult> 
 		!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
 	) {
 		return {
-			error: "Invalid email",
+			error: {
+				username: null,
+				email: "Invalid email",
+				password: null,
+			}
 		};
 	}
 
-	const hashedPassword = await new Argon2id().hash(password);
+	const password2 = formData.get("password2");
+	if (password !== password2) {
+		return {
+			error: {
+				username: null,
+				email: null,
+				password: "Passwords do not match",
+			}
+		};
+	}
+
+	const hashedPassword = await new (await import("oslo/password")).Argon2id().hash(password);
 	const userId = generateId(15);
 
 	try {
@@ -67,16 +98,24 @@ export async function signup(_: any, formData: FormData): Promise<ActionResult> 
 	} catch (e) {
 		const msg = e as unknown as DrizzleError;
 		const { cause, stack, message } = msg;
-		console.error({ cause, stack, message });
 		if (
 			msg.message.includes("duplicate key value violates unique constraint")
-		) {
+			) {
+				return {
+					error: {
+						username: "Username or email already exists",
+						email: "Username or email already exists",
+						password: null,
+					}
+				};
+			}
+			console.error({ cause, stack, message });
 			return {
-				error: "Username or email already used",
-			};
-		}
-		return {
-			error: "An unknown error occurred",
+			error: {
+				username: null,
+				email: null,
+				password: "An error occurred",
+			}
 		};
 	}
 	return redirect("/");

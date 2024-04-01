@@ -15,6 +15,7 @@
   "dependencies": {
     "@auth/drizzle-adapter": "^0.7.0",
     "@elysiajs/swagger": "^1.0.3",
+    "@hookform/resolvers": "^3.3.4",
     "@lucia-auth/adapter-drizzle": "^1.0.7",
     "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-slot": "^1.0.2",
@@ -30,6 +31,7 @@
     "postgres": "^3.4.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-hook-form": "^7.51.2",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.22.4"

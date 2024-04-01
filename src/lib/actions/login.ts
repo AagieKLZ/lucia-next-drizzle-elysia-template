@@ -1,20 +1,21 @@
+"use server"
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Argon2id } from "oslo/password";
 import { lucia } from "~/lib/auth";
-import type { ActionResult } from "~/lib/form";
 import { db, userTable } from "~/server/db/schema";
+
+type ActionResult = {
+	error: string | null;
+}
 
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
 export async function login(_: any, formData: FormData): Promise<ActionResult> {
-	"use server";
 	const username = formData.get("username");
 	if (
 		typeof username !== "string" ||
 		username.length < 3 ||
-		username.length > 31 ||
-		!/^[a-z0-9_-]+$/.test(username)
+		username.length > 31 
 	) {
 		return {
 			error: "Invalid username",
@@ -48,8 +49,14 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
 
 	const existingUser = user[0];
 
-	const validPassword = await new Argon2id().verify(
-		existingUser?.password ?? "",
+	if (!existingUser?.password) {
+		return {
+			error: "Incorrect username or password",
+		};
+	}
+
+	const validPassword = await new (await import("oslo/password")).Argon2id().verify(
+		existingUser.password,
 		password,
 	);
 	if (!validPassword) {
@@ -60,7 +67,6 @@ export async function login(_: any, formData: FormData): Promise<ActionResult> {
 
 	const session = await lucia.createSession(existingUser?.id ?? "0", {});
 	const sessionCookie = lucia.createSessionCookie(session.id);
-	console.log({ sessionCookie });
 	cookies().set(
 		sessionCookie.name,
 		sessionCookie.value,

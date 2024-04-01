@@ -1,9 +1,10 @@
 import { lucia, validateRequest } from "@/lib/auth";
-import { Form } from "@/lib/form";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 
-import type { ActionResult } from "@/lib/form";
+type ActionResult = {
+	error: string | null;
+};
 
 export default async function Page() {
 	const { user } = await validateRequest();
@@ -15,9 +16,9 @@ export default async function Page() {
 			<h1>Hi, {user.username}!</h1>
 			<p>Your user ID is {user.id}.</p>
 			<p>Your email is {user.email}</p>
-			<Form action={logout}>
+			<form action={logout}>
 				<button type="submit">Sign out</button>
-			</Form>
+			</form>
 		</>
 	);
 }

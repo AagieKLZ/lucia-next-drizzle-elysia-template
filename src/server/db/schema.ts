@@ -1,11 +1,5 @@
-import { relations, sql } from "drizzle-orm";
 import {
-  boolean,
-  decimal,
-  integer,
   pgTableCreator,
-  serial,
-  varchar,
 } from "drizzle-orm/pg-core";
 import pg from "pg";
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle";
